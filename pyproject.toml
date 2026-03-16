@@ -29,6 +29,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+mosaic_tui = ["_requirements_gpu.txt"]
+
 [tool.mypy]
 ignore_missing_imports = true
 
