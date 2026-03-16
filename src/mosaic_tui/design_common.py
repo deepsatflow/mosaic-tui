@@ -227,20 +227,16 @@ def config_from_dict(d: dict) -> DesignConfig:
 # --- Modal image ---
 
 _PKG_DIR = Path(__file__).resolve().parent
-_PROJECT_ROOT = _PKG_DIR.parent.parent
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("git", "wget")
     .add_local_file(
-        str(_PROJECT_ROOT / "pyproject.toml"), "/app/pyproject.toml", copy=True
+        str(_PKG_DIR / "_requirements_gpu.txt"),
+        "/tmp/requirements.txt",
+        copy=True,
     )
-    .add_local_file(str(_PROJECT_ROOT / "uv.lock"), "/app/uv.lock", copy=True)
-    .workdir("/app")
-    .run_commands(
-        "uv export --frozen --no-hashes --no-emit-project --group gpu > /tmp/requirements.txt"
-        " && uv pip install --system -r /tmp/requirements.txt"
-    )
+    .run_commands("uv pip install --system -r /tmp/requirements.txt")
     .env({"XLA_PYTHON_CLIENT_MEM_FRACTION": "0.95"})
     .add_local_file(
         str(_PKG_DIR / "__init__.py"), "/app/mosaic_tui/__init__.py", copy=True
