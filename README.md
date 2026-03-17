@@ -1,6 +1,10 @@
 # MOSAIC TUI
 
+> **WARNING**: This is mostly for fun. None of these methods have been tested in the wetlab.
+
 This is a needlessly baroque Terminal UI frontend for [mosaic](https://github.com/escalante-bio/mosaic) protein binder design, coupled with a fairly good backend on [Modal](https://modal.com) for distributed GPU compute.
+
+Also this is wildly against the ethos of `mosaic`: the whole point of `mosaic` is to build your own custom design pipelines for complex design tasks that can be used in minimal notebooks or scripts. but TUIs are fun.
 
 <p align="center">
   <img src="assets/dashboard.gif" alt="mosaic TUI dashboard" width="800">
