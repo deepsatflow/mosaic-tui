@@ -18,7 +18,14 @@ modal setup
 ## Quick start
 
 ```bash
+# Interactive file picker -- no arguments needed
+uv run mosaic
+
+# Or specify a target directly
 uv run mosaic --cif targets/CCL2.cif --chain M --binder-length 100 --num-designs 30 --num-gpus 5
+
+# Or download a structure from RCSB by PDB ID
+uv run mosaic --pdb 1ANF --chain A
 ```
 
 This opens an interactive config screen. Press F5 (or Ctrl-S) to launch the run.
@@ -165,11 +172,14 @@ modal volume get design-results <run_name>/ results/<run_name>/
 
 ## Running headless
 
-`--no-config` skips the config screen and uses CLI defaults directly. Useful for scripts and CI:
+`--no-config` skips the config screen and uses CLI defaults directly. Useful for scripts and CI. Requires `--cif`, `--pdb`, or `--sequence` (the interactive file picker is disabled with `--no-config`):
 
 ```bash
 # Launch with all defaults, no interactive config
 uv run mosaic --cif targets/CCL2.cif --chain M --no-config
+
+# Download from RCSB and launch headless
+uv run mosaic --pdb 1ANF --chain A --no-config
 
 # Fully specified -- nothing interactive except the dashboard
 uv run mosaic --cif targets/CCL2.cif --chain M \
@@ -192,7 +202,8 @@ The dashboard itself still runs (it's just a display), but no user input is requ
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--cif` | | Target structure in CIF format (required unless `--sequence` or `--run`) |
+| `--cif` | | Target structure in CIF format |
+| `--pdb` | | PDB ID to download from RCSB (e.g. `1ANF`). Mutually exclusive with `--cif` |
 | `--chain` | A | Target chain ID |
 | `--sequence` | | Target amino acid sequence for structure-free design (mutually exclusive with `--cif`) |
 | `--binder-length` | 120 | Binder length in residues |
