@@ -137,6 +137,11 @@ def main() -> None:
         description="Protein binder design with rich live dashboard"
     )
     parser.add_argument("--cif", default=None, help="Path to .cif or .pdb file")
+    parser.add_argument(
+        "--pdb",
+        default=None,
+        help="PDB ID to download from RCSB (e.g. 1ANF). Mutually exclusive with --cif.",
+    )
     parser.add_argument("--chain", default="A", help="Target chain ID (default: A)")
     parser.add_argument(
         "--sequence",
@@ -256,10 +261,36 @@ def main() -> None:
         print(f"Resuming run '{args.run}'")
         _run_with_spinner(target=target, hotspots=hotspot_list, config=config)
     else:
+        if args.pdb:
+            if args.cif:
+                parser.error("--pdb and --cif are mutually exclusive")
+            import httpx
+
+            pdb_id = args.pdb.upper()
+            url = f"https://files.rcsb.org/download/{pdb_id}.cif"
+            resp = httpx.get(url, follow_redirects=True)
+            if resp.status_code != 200:
+                parser.error(
+                    f"failed to download {pdb_id} from RCSB (HTTP {resp.status_code})"
+                )
+            targets_dir = Path("targets")
+            targets_dir.mkdir(exist_ok=True)
+            cif_path = targets_dir / f"{pdb_id}.cif"
+            cif_path.write_bytes(resp.content)
+            print(f"Downloaded {pdb_id} -> {cif_path}")
+            args.cif = str(cif_path)
+
         if args.cif and args.sequence:
             parser.error("--cif and --sequence are mutually exclusive")
         if not args.cif and not args.sequence:
-            parser.error("--cif or --sequence is required for new runs")
+            if args.no_config:
+                parser.error("--cif or --sequence is required with --no-config")
+            from mosaic_tui.config_screen import TargetPicker
+
+            picked = TargetPicker().run()
+            if picked is None:
+                sys.exit(0)
+            args.cif = str(picked)
         if args.sequence and args.method == "boltzgen":
             parser.error("BoltzGen requires a structure file (--cif)")
 

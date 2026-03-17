@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from rich.text import Text
@@ -283,6 +284,44 @@ Screen {
     margin: 1 0;
 }
 """
+
+
+class TargetPicker(App[Path | None]):
+    """File picker for selecting a target CIF/PDB file."""
+
+    CSS = PICKER_CSS
+
+    BINDINGS = [
+        Binding("escape", "abort", "Abort", priority=True),
+    ]
+
+    def on_mount(self) -> None:
+        from textual_fspicker import FileOpen, Filters
+
+        self.title = "MOSAIC v0.01"
+        self.sub_title = "Select target structure"
+
+        location = Path.cwd()
+        self.push_screen(
+            FileOpen(
+                location=str(location),
+                title="Select target CIF/PDB",
+                filters=Filters(
+                    (
+                        "Structure files (*.cif, *.pdb)",
+                        lambda p: p.suffix.lower() in {".cif", ".pdb"},
+                    ),
+                    ("All files", lambda _: True),
+                ),
+            ),
+            callback=self._on_file_selected,
+        )
+
+    def _on_file_selected(self, path: Path | None) -> None:
+        self.exit(path)
+
+    def action_abort(self) -> None:
+        self.exit(None)
 
 
 class MethodPicker(App[str | None]):
