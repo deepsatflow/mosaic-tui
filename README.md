@@ -62,11 +62,12 @@ uv run mosaic --cif target.cif --chain A
 
 Generative model for binder sequences and structures.
 
-Two weight variants are available. **RL weights** (default) have been fine-tuned with reinforcement learning on a `mosaic` loss. **Base weights** are also available.
+Three checkpoint variants are available. **RL** (default) has been fine-tuned with reinforcement learning on a `mosaic` loss. **Finetuned** is a supervised fine-tune of the base model. **Base** is the original BoltzGen checkpoint.
 
 ```bash
-uv run mosaic --cif target.cif --chain A --method boltzgen
-uv run mosaic --cif target.cif --chain A --method boltzgen --no-rl-checkpoint  # base weights
+uv run mosaic --cif target.cif --chain A --method boltzgen                        # RL (default)
+uv run mosaic --cif target.cif --chain A --method boltzgen --checkpoint finetuned  # finetuned
+uv run mosaic --cif target.cif --chain A --method boltzgen --checkpoint base       # base
 ```
 
 ### Structure-free hallucination
@@ -217,7 +218,7 @@ The dashboard itself still runs (it's just a display), but no user input is requ
 | `--no-msa` | false | Disable MSA for target chain |
 | `--fast` | false | Contact losses only, 1 recycle step |
 | `--full-ranking` | false | Rebuild features per sequence for ranking (slower, more accurate) |
-| `--rl-checkpoint` / `--no-rl-checkpoint` | on | RL post-trained BoltzGen weights |
+| `--checkpoint` | rl | BoltzGen checkpoint: `rl`, `finetuned`, or `base` |
 | `--no-trim` | false | Include unresolved terminal residues from entity sequence |
 | `--no-config` | false | Skip config screen |
 

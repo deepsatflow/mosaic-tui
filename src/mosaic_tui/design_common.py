@@ -137,18 +137,20 @@ class SimplexConfig:
         )
 
 
+BOLTZGEN_CHECKPOINTS = ("rl", "finetuned", "base")
+
+
 @dataclass(frozen=True)
 class BoltzGenConfig:
-    use_rl_checkpoint: bool = True
+    checkpoint: str = "rl"
     num_sampling_steps: int = 500
     step_scale: float = 2.0
     noise_scale: float = 0.88
     recycling_steps: int = 3
 
     def describe(self) -> str:
-        weights = "RL" if self.use_rl_checkpoint else "base"
         return (
-            f"BoltzGen ({weights}): steps={self.num_sampling_steps}"
+            f"BoltzGen ({self.checkpoint}): steps={self.num_sampling_steps}"
             f" scale={self.step_scale} noise={self.noise_scale}"
         )
 
@@ -184,9 +186,12 @@ def config_from_dict(d: dict) -> DesignConfig:
     match method_type:
         case "boltzgen":
             bg_fields = {f.name for f in BoltzGenConfig.__dataclass_fields__.values()}
-            method: MethodConfig = BoltzGenConfig(
-                **{k: v for k, v in method_data.items() if k in bg_fields}
-            )
+            bg_kwargs = {k: v for k, v in method_data.items() if k in bg_fields}
+            if "use_rl_checkpoint" in method_data and "checkpoint" not in method_data:
+                bg_kwargs["checkpoint"] = (
+                    "rl" if method_data["use_rl_checkpoint"] else "base"
+                )
+            method: MethodConfig = BoltzGenConfig(**bg_kwargs)
         case _:
             method = SimplexConfig(
                 loss_weights=LossWeights(**method_data.get("loss_weights", {})),
@@ -318,20 +323,17 @@ def download_weights() -> None:
 
         load_boltzgen()
 
-    # RL post-training checkpoint
+    # Post-training checkpoints (RL + finetuned)
     dest = boltz_dir / "boltzgen_checkpoints"
     dest.mkdir(parents=True, exist_ok=True)
-    rl_path = dest / "diverse_rl.eqx"
-    if not rl_path.exists():
-        subprocess.run(
-            [
-                "wget",
-                "-O",
-                str(rl_path),
-                "https://huggingface.co/escalante-bio/boltzgen-posttraining/resolve/main/boltzgen1_diverse_rl.eqx",
-            ],
-            check=True,
-        )
+    hf_base = "https://huggingface.co/escalante-bio/boltzgen-posttraining/resolve/main"
+    for filename in ("boltzgen1_diverse_rl.eqx", "boltzgen1_diverse_finetuned.eqx"):
+        path = dest / filename
+        if not path.exists():
+            subprocess.run(
+                ["wget", "-O", str(path), f"{hf_base}/{filename}"],
+                check=True,
+            )
     boltzgen_volume.commit()
 
     marker.touch()

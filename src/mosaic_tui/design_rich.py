@@ -187,10 +187,10 @@ def main() -> None:
         help="Design method: simplex (gradient optimization) or boltzgen (diffusion sampling)",
     )
     parser.add_argument(
-        "--rl-checkpoint",
-        action=argparse.BooleanOptionalAction,
+        "--checkpoint",
+        choices=["rl", "finetuned", "base"],
         default=None,
-        help="Use the RL post-training BoltzGen checkpoint",
+        help="BoltzGen checkpoint: rl (default), finetuned, or base",
     )
     parser.add_argument(
         "--no-trim",
@@ -313,10 +313,8 @@ def main() -> None:
                     use_msa=use_msa,
                 )
             case BoltzGenConfig() as m:
-                if args.rl_checkpoint is not None:
-                    method = dataclasses.replace(
-                        m, use_rl_checkpoint=args.rl_checkpoint
-                    )
+                if args.checkpoint is not None:
+                    method = dataclasses.replace(m, checkpoint=args.checkpoint)
                 else:
                     method = m
 

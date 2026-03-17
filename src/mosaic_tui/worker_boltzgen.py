@@ -85,9 +85,13 @@ def run_boltzgen_designs(
         ctx.send(StatusMsg(gpu=gpu_id, text="Loading models...", hw=ctx.hw_stats()))
 
         boltzgen = load_boltzgen()
-        if method.use_rl_checkpoint:
+        _CHECKPOINT_PATHS = {
+            "rl": "/root/.boltz/boltzgen_checkpoints/boltzgen1_diverse_rl.eqx",
+            "finetuned": "/root/.boltz/boltzgen_checkpoints/boltzgen1_diverse_finetuned.eqx",
+        }
+        if method.checkpoint in _CHECKPOINT_PATHS:
             boltzgen = eqx.tree_deserialise_leaves(
-                "/root/.boltz/boltzgen_checkpoints/diverse_rl.eqx", boltzgen
+                _CHECKPOINT_PATHS[method.checkpoint], boltzgen
             )
         folder = Protenix2025()
         ctx.send(StatusMsg(gpu=gpu_id, text="Models loaded", hw=ctx.hw_stats()))

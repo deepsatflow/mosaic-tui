@@ -20,6 +20,7 @@ from textual.widgets import (
     Footer,
     Header,
     Input,
+    Select,
     Static,
     Switch,
     TabbedContent,
@@ -27,6 +28,7 @@ from textual.widgets import (
 )
 
 from mosaic_tui.design_common import (
+    BOLTZGEN_CHECKPOINTS,
     BoltzGenConfig,
     CifTarget,
     DesignConfig,
@@ -62,12 +64,23 @@ class ScalarField:
 
 
 @dataclass
+class ChoiceField:
+    category: str
+    key: str
+    choices: tuple[str, ...]
+    default: str
+
+
+@dataclass
 class RangeField:
     category: str
     key: str
     field_type: str  # "int" or "float"
     default_lo: float | int
     default_hi: float | int
+
+
+FieldDesc = ScalarField | ChoiceField | RangeField
 
 
 def _ft(v: object) -> str:
@@ -82,14 +95,14 @@ def _ft(v: object) -> str:
 
 def _method_categories(
     method: MethodConfig,
-) -> list[tuple[str, list[ScalarField | RangeField]]]:
+) -> list[tuple[str, list[FieldDesc]]]:
     """Build field descriptors for the method-specific tabs."""
-    categories: list[tuple[str, list[ScalarField | RangeField]]] = []
+    categories: list[tuple[str, list[FieldDesc]]] = []
     match method:
         case SimplexConfig():
             defaults = SimplexConfig()
 
-            loss_fields: list[ScalarField | RangeField] = [
+            loss_fields: list[FieldDesc] = [
                 ScalarField("Loss", "recycling_steps", "int", defaults.recycling_steps),
                 ScalarField("Loss", "num_samples", "int", defaults.num_samples),
                 ScalarField("Loss", "use_msa", "bool", defaults.use_msa),
@@ -105,7 +118,7 @@ def _method_categories(
             )
             categories.append(("Loss", loss_fields))
 
-            opt_fields: list[ScalarField | RangeField] = []
+            opt_fields: list[FieldDesc] = []
             for key in HyperparamRanges.__dataclass_fields__:
                 r = getattr(defaults.hyperparam_ranges, key)
                 ft = "int" if key.endswith("_steps") else "float"
@@ -131,8 +144,17 @@ def _method_categories(
 
         case BoltzGenConfig():
             bg_defaults = BoltzGenConfig()
-            bg_fields: list[ScalarField | RangeField] = []
+            bg_fields: list[FieldDesc] = [
+                ChoiceField(
+                    "BoltzGen",
+                    "checkpoint",
+                    BOLTZGEN_CHECKPOINTS,
+                    bg_defaults.checkpoint,
+                ),
+            ]
             for key in BoltzGenConfig.__dataclass_fields__:
+                if key == "checkpoint":
+                    continue
                 bg_fields.append(
                     ScalarField(
                         "BoltzGen",
@@ -148,14 +170,14 @@ def _method_categories(
 
 def _field_descriptors(
     config: DesignConfig,
-) -> list[tuple[str, list[ScalarField | RangeField]]]:
+) -> list[tuple[str, list[FieldDesc]]]:
     """Build ordered (category_name, fields) list from a DesignConfig."""
     defaults = default_config()
-    categories: list[tuple[str, list[ScalarField | RangeField]]] = []
+    categories: list[tuple[str, list[FieldDesc]]] = []
 
     # Run Parameters (shared)
     drp = defaults.run_params
-    rp_fields: list[ScalarField | RangeField] = [
+    rp_fields: list[FieldDesc] = [
         ScalarField("Run Parameters", key, _ft(getattr(drp, key)), getattr(drp, key))
         for key in ("binder_length", "num_designs", "num_gpus", "run")
     ]
@@ -166,7 +188,7 @@ def _field_descriptors(
 
     # Ranking (shared)
     drk = defaults.ranking
-    rk_fields: list[ScalarField | RangeField] = [
+    rk_fields: list[FieldDesc] = [
         ScalarField("Ranking", key, _ft(getattr(drk, key)), getattr(drk, key))
         for key in RankingConfig.__dataclass_fields__
     ]
@@ -567,6 +589,45 @@ class FieldRow(Widget):
             self.remove_class("changed")
 
 
+class ChoiceRow(Widget):
+    """A config field with a fixed set of choices, rendered as a Select dropdown."""
+
+    DEFAULT_CSS = ""
+
+    def __init__(
+        self,
+        desc: ChoiceField,
+        value: str,
+        disabled: bool = False,
+        **kwargs,
+    ) -> None:
+        super().__init__(classes="field-row", **kwargs)
+        self.desc = desc
+        self._init_value = value
+        self._disabled = disabled
+
+    def compose(self) -> ComposeResult:
+        yield Static(self.desc.key, classes="field-label")
+        options = [(c, c) for c in self.desc.choices]
+        sel = Select(
+            options,
+            value=self._init_value,
+            allow_blank=False,
+            classes="field-input",
+            disabled=self._disabled,
+        )
+        sel.field_desc = self.desc
+        yield sel
+        yield Static(f"(default: {self.desc.default})", classes="field-default")
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        desc = getattr(event.select, "field_desc", None)
+        if desc and event.value != desc.default:
+            self.add_class("changed")
+        else:
+            self.remove_class("changed")
+
+
 class RangeRow(Widget):
     """A range config field: label + lo input + dash + hi input."""
 
@@ -699,6 +760,8 @@ class ConfigScreen(App[tuple[DesignConfig, list[int] | None] | None]):
                         val = _get_value(self._config, desc.category, desc.key)
                         if is_range:
                             yield RangeRow(desc, val, disabled=locked)
+                        elif isinstance(desc, ChoiceField):
+                            yield ChoiceRow(desc, str(val), disabled=locked)
                         else:
                             yield FieldRow(desc, val, disabled=locked)
                         prev_was_range = is_range
@@ -744,6 +807,11 @@ class ConfigScreen(App[tuple[DesignConfig, list[int] | None] | None]):
                     lo = _parse(lo_inp.value, desc.field_type, desc.default_lo)
                     hi = _parse(hi_inp.value, desc.field_type, desc.default_hi)
                     cat_vals[desc.key] = Range(lo=lo, hi=hi)
+                elif isinstance(desc, ChoiceField):
+                    for sel in self.query(Select):
+                        if getattr(sel, "field_desc", None) is desc:
+                            cat_vals[desc.key] = sel.value
+                            break
                 elif desc.field_type == "bool":
                     for sw in self.query(Switch):
                         if getattr(sw, "field_desc", None) is desc:
@@ -791,11 +859,11 @@ class ConfigScreen(App[tuple[DesignConfig, list[int] | None] | None]):
             case BoltzGenConfig():
                 bg = vals["BoltzGen"]
                 method = BoltzGenConfig(
+                    checkpoint=str(bg["checkpoint"]),
                     num_sampling_steps=int(bg["num_sampling_steps"]),
                     step_scale=float(bg["step_scale"]),
                     noise_scale=float(bg["noise_scale"]),
                     recycling_steps=int(bg["recycling_steps"]),
-                    use_rl_checkpoint=bool(bg["use_rl_checkpoint"]),
                 )
 
         return DesignConfig(
