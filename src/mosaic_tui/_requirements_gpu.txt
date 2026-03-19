@@ -47,7 +47,7 @@ biopython==1.84
     #   dna-features-viewer
     #   esm
     #   protenix
-biotite==1.0.1
+biotite==1.6.0
     # via
     #   boltzgen
     #   esm
@@ -226,6 +226,7 @@ httpx==0.28.1
     # via
     #   esm
     #   mosaic
+    #   mosaic-tui
 huggingface-hub==0.36.2
     # via
     #   boltzgen
@@ -421,6 +422,7 @@ numba==0.61.0
     #   ablang
     #   boltz
     #   boltzgen
+numpy==2.1.0
     # via
     #   ablang
     #   biopython
@@ -530,6 +532,7 @@ orjson==3.11.7
     # via mosaic-tui
 packaging==26.0
     # via
+    #   biotite
     #   dna-features-viewer
     #   huggingface-hub
     #   hydra-core
@@ -587,7 +590,7 @@ propcache==0.4.1
     # via
     #   aiohttp
     #   yarl
-protenix @ git+https://github.com/escalante-bio/protenij@45ea633b5c13e1fdd9f315bac372cabc7df495c6
+protenix @ git+https://github.com/escalante-bio/protenij@d508e285b6d5ce8bc4c7ac3af76faa99db5db654
     # via mosaic
 protobuf==3.20.2
     # via
@@ -695,6 +698,7 @@ scikit-learn==1.6.1
     #   boltzgen
     #   esm
     #   protenix
+scipy==1.15.3
     # via
     #   biotraj
     #   boltz
@@ -749,7 +753,10 @@ tensorstore==0.1.81
 textual==8.0.2
     # via
     #   mosaic-tui
+    #   textual-fspicker
     #   textual-plotext
+textual-fspicker==1.0.0
+    # via mosaic-tui
 textual-plotext==1.0.1
     # via mosaic-tui
 threadpoolctl==3.6.0
@@ -777,7 +784,7 @@ torch==2.7.1 ; python_full_version < '3.14' and sys_platform == 'darwin'
     #   torchmetrics
     #   torchtext
     #   torchvision
-torch==2.7.1+cpu ; python_full_version >= '3.14' or sys_platform != 'darwin'
+torch==2.7.1 ; python_full_version >= '3.14' or sys_platform != 'darwin'
     # via
     #   ablang
     #   boltz
@@ -798,7 +805,7 @@ torchvision==0.22.1 ; (python_full_version < '3.14' and platform_machine == 'aar
     # via
     #   esm
     #   mosaic
-torchvision==0.22.1+cpu ; (python_full_version >= '3.14' and sys_platform == 'darwin') or (python_full_version >= '3.14' and sys_platform == 'linux') or (platform_machine != 'aarch64' and sys_platform == 'linux') or (platform_python_implementation != 'CPython' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')
+torchvision==0.22.1 ; (python_full_version >= '3.14' and sys_platform == 'darwin') or (python_full_version >= '3.14' and sys_platform == 'linux') or (platform_machine != 'aarch64' and sys_platform == 'linux') or (platform_python_implementation != 'CPython' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')
     # via
     #   esm
     #   mosaic

@@ -237,19 +237,9 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("git", "wget")
     .add_local_file(
-        str(_PKG_DIR / "_requirements_gpu.txt"),
-        "/tmp/requirements.txt",
-        copy=True,
+        str(_PKG_DIR / "_requirements_gpu.txt"), "/tmp/requirements.txt", copy=True
     )
-    .add_local_file(
-        str(_PKG_DIR / "_overrides.txt"),
-        "/tmp/overrides.txt",
-        copy=True,
-    )
-    .run_commands(
-        "uv pip install --system -r /tmp/requirements.txt"
-        " --overrides /tmp/overrides.txt"
-    )
+    .run_commands("uv pip install --system --no-deps -r /tmp/requirements.txt")
     .env({"XLA_PYTHON_CLIENT_MEM_FRACTION": "0.95"})
     .add_local_file(
         str(_PKG_DIR / "__init__.py"), "/app/mosaic_tui/__init__.py", copy=True
